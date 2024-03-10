@@ -1,5 +1,7 @@
+const nodemailer = require('nodemailer');
 const userModel = require('../models/userModel');
 const uuid = require('uuid');
+require('dotenv').config();
 
 const signupUser = async (req, res) => {
   try {
@@ -26,6 +28,29 @@ const loginUser = async (req, res) => {
     if (password !== user.password) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.AUTH_EMAIL,
+        pass: process.env.SECRET_KEY
+      }
+    });
+
+    const mailOptions = {
+      from: `"Authentication Notifier" <${process.env.AUTH_EMAIL}>`,
+      to: user.email,
+      subject: 'Login Notification',
+      text: 'You have successfully logged in.'
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+      } else {
+        console.log('Email sent:', info.response);
+      }
+    });
 
     const token = uuid.v4();
 
