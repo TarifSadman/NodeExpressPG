@@ -46,7 +46,6 @@ const getUserById = async (id) => {
 
 const signupUser = async (username, password, email) => {
   try {
-    // const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query('INSERT INTO new_signup (username, password, email) VALUES ($1, $2, $3) RETURNING *', [username, password, email]);
     return result.rows[0];
   } catch (error) {
