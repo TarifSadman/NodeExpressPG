@@ -44,14 +44,35 @@ const getUserById = async (id) => {
   }
 };
 
-const signupUser = async (username, password, email) => {
+const initSignup = async (username, password, email) => {
   try {
-    const result = await pool.query('INSERT INTO new_signup (username, password, email) VALUES ($1, $2, $3) RETURNING *', [username, password, email]);
-    return result.rows[0];
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    
+    await pool.query('INSERT INTO otp_table (email, username, password, otp, status) VALUES ($1, $2, $3, $4, $5)', [email, username, password, otp, 1]);    
+    return { email, username, otp };
   } catch (error) {
     throw error;
   }
 };
+
+const conSignup = async (email, otp, username, password) => {
+  try {
+    const otpResult = await pool.query('SELECT * FROM otp_table WHERE email = $1 AND otp = $2 AND status = 1', [email, otp]);
+    
+    if (otpResult.rows.length === 0) {
+      throw new Error('Invalid OTP or email');
+    }
+
+    await pool.query('UPDATE otp_table SET status = 2 WHERE email = $1', [email]);
+
+    await pool.query('INSERT INTO new_signup (username, email, password) VALUES ($1, $2, $3)', [username, email, password]);
+
+    return { message: 'OTP verification successful. User registered successfully.' };
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 const getSignedUsers = async () => {
   try {
@@ -71,4 +92,4 @@ const loginUser = async (email) => {
   }
 };
 
-module.exports = { getAllUsers, insertUser, updateUser, deleteUser, getUserById, signupUser, getSignedUsers, loginUser };
+module.exports = { getAllUsers, insertUser, updateUser, deleteUser, getUserById, initSignup, conSignup, getSignedUsers, loginUser };
